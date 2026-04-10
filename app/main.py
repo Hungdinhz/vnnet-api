@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.db.database import engine, Base
-from app.models import user # Import để SQLAlchemy nhận diện được Model User
+from app.models import user, post # Import để SQLAlchemy nhận diện được Model User
+from app.api import user as user_api
 
 # Lệnh này sẽ yêu cầu SQLAlchemy kiểm tra DB, nếu chưa có bảng thì tự động tạo!
 Base.metadata.create_all(bind=engine)
@@ -10,6 +11,9 @@ app = FastAPI(
     description="API cho mạng xã hội thu nhỏ",
     version="1.0.0"
 )
+
+# Nhúng router của User vào ứng dụng
+app.include_router(user_api.router)
 
 @app.get("/")
 def read_root():
