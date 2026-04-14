@@ -4,7 +4,8 @@ from typing import List # Dùng để khai báo kiểu dữ liệu là một Dan
 
 from app.db.database import get_db
 from app.schemas.post import PostCreate, PostResponse, PostUpdate
-from app.crud import post as crud_post
+from app.schemas.interaction import CommentCreate, CommentResponse
+from app.crud import post as crud_post, interaction as crud_interaction
 from app.api.user import get_current_user # Import hàm "soát vé" từ api user
 from app.models.user import User
 
@@ -66,3 +67,41 @@ def delete_post(
 
     crud_post.delete_post(db=db, db_post=db_post)
     return {"message": "Bài viết đã được xóa thành công"}
+
+# 6. API Thích / Bỏ thích bài viết (BẮT BUỘC ĐĂNG NHẬP)
+@router.post("/{post_id}/like")
+def toggle_like_post(
+    post_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    # Kiểm tra xem bài viết có tồn tại không trước khi cho like
+    db_post = crud_post.get_post(db, post_id=post_id)
+    if db_post is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài viết")
+        
+    return crud_interaction.toggle_like(db=db, user_id=current_user.id, post_id=post_id)
+
+# 7. API Viết bình luận (BẮT BUỘC ĐĂNG NHẬP)
+@router.post("/{post_id}/comments", response_model=CommentResponse)
+def create_comment_on_post(
+    post_id: int, 
+    comment: CommentCreate, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    db_post = crud_post.get_post(db, post_id=post_id)
+    if db_post is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài viết")
+        
+    return crud_interaction.create_comment(db=db, comment=comment, user_id=current_user.id, post_id=post_id)
+
+# 8. API Xem danh sách bình luận (KHÔNG CẦN ĐĂNG NHẬP)
+@router.get("/{post_id}/comments", response_model=List[CommentResponse])
+def read_post_comments(post_id: int, db: Session = Depends(get_db)):
+    db_post = crud_post.get_post(db, post_id=post_id)
+    if db_post is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài viết")
+        
+    return crud_interaction.get_comments_by_post(db=db, post_id=post_id)
+
