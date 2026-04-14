@@ -77,3 +77,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 def read_users_me(current_user = Depends(get_current_user)):
     # Trả về thẳng thông tin user, FastAPI sẽ tự động dùng UserResponse để lọc bỏ password
     return current_user
+
+
+
+
+
